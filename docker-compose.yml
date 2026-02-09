@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # MCP Server - Tool execution server
+  mcp-server:
+    build:
+      context: ./mcp-server
+      dockerfile: Dockerfile
+    container_name: todo-mcp-server
+    ports:
+      - "8003:8003"
+    environment:
+      - BACKEND_URL=https://rameesha12123214-todophase02-backend.hf.space
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # AI Agent - OpenAI chatbot
+  ai-agent:
+    build:
+      context: ./ai-agent
+      dockerfile: Dockerfile
+    container_name: todo-ai-agent
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./ai-agent/.env
+    depends_on:
+      - mcp-server
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Frontend - Next.js App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todo-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_AI_AGENT_URL=http://localhost:8002
+      - NEXT_PUBLIC_BACKEND_URL=https://rameesha12123214-todophase02-backend.hf.space
+    depends_on:
+      - ai-agent
+      - mcp-server
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Backend - FastAPI (Optional - already deployed on HuggingFace)
+  # Uncomment below if you want to run backend locally in Docker
+  # backend:
+  #   build:
+  #     context: ./Todophase02-backend
+  #     dockerfile: Dockerfile
+  #   container_name: todo-backend
+  #   ports:
+  #     - "8000:7860"
+  #   env_file:
+  #     - ./Todophase02-backend/.env
+  #   networks:
+  #     - todo-network
+  #   restart: unless-stopped
+
+networks:
+  todo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
